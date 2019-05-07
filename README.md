@@ -1,2 +1,2 @@
-# use_webgl
-webgl使ってみたい
+# use_webGL
+webGL使ってみたい
