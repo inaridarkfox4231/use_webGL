@@ -5,8 +5,21 @@
     <title>WebGL TEST</title>
     <script src="https://wgld.org/j/minMatrix.js"></script>
     <script src = "./src/script.js"></script>
-    <script src = "./src/script_vs.js" id = "vs" type = "x-shader/x-vertex"></script>
-    <script src = "./src/script_fs.js" id = "fs" type = "x-shader/x-fragment"></script>
+    <script id = "vs" type = "x-shader/x-vertex">
+      attribute vec3 position; // 頂点の位置情報
+      uniform   mat4 mvpMatrix; // モデル、ビュー、プロジェクションの行列を掛け合わせたもの
+
+      void main(void){
+        // vec3をvec4に変える。
+        gl_Position = mvpMatrix * vec4(position, 1.0);
+      }
+    </script>
+    <script id = "fs" type = "x-shader/x-fragment">
+      void main(void){
+        // 真っ白に塗りつぶすだけ
+        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+      }
+    </script>
     <style>
       *{ padding: 0; margin: 0; }
       canvas{
