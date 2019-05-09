@@ -72,6 +72,9 @@ onload = function(){
 // ---------------------------------------------------- //
   // レンダリングの為の座標変換行列を用意する
 
+  // uniformLocationの取得
+  var uniLocation = gl.getUniformLocation(prg, 'mvpMatrix');
+
   // matIVオブジェクトを用意する
   var m = new matIV();
 
@@ -79,30 +82,39 @@ onload = function(){
   var mMatrix = m.identity(m.create());
   var vMatrix = m.identity(m.create());
   var pMatrix = m.identity(m.create());
+  var tmpMatrix = m.identity(m.create()); // vとpを掛け合わせた行列を保持するための行列
   var mvpMatrix = m.identity(m.create());
+
+  // 複数の三角形をレンダリングする場合には、モデル行列だけ差し替えて、別々に描画する
 
   // 今回はモデル変換行列はノータッチで。
 
-  // ビュー座標変換行列
+  // ビュー座標変換行列、プロジェクション
   // カメラの位置は上に1.0, うしろに3.0の所、注視点は原点、上方向はy軸の正の向き。
-  m.lookAt([0.0, 1.0, 3.0], [0, 0, 0], [0, 1, 0], vMatrix);
-
-  // プロジェクション座標変換行列
+  m.lookAt([0.0, 0.0, 3.0], [0, 0, 0], [0, 1, 0], vMatrix);
   m.perspective(90, c.width / c.height, 0.1, 100, pMatrix);
+  m.multiply(pMatrix, vMatrix, tmpMatrix); // pv.
 
-  // 行列を掛け合わせる
-  m.multiply(pMatrix, vMatrix, mvpMatrix);
-  m.multiply(mvpMatrix, mMatrix, mvpMatrix);
+  // 一つ目のモデルを移動するためのモデル変換行列
+  m.translate(mMatrix, [1.5, 0.0, 0.0], mMatrix);
 
-  // uniformLocationの取得
-  var uniLocation = gl.getUniformLocation(prg, 'mvpMatrix');
+  // モデル・ビュー・プロジェクション（ひとつめ）
+  m.multiply(tmpMatrix, mMatrix, mvpMatrix);
 
-  // uniformLocationへ座標変換行列を登録
+  // uniformLocationに座標変換行列を登録して描画～
   gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  // 次に、二つ目のモデルを用意するための準備（初期化を忘れずに）
+  m.identity(mMatrix);
+  m.translate(mMatrix, [-1.5, 0.0, 0.0], mMatrix);
+
+  // 以下同じ処理
+  m.multiply(tmpMatrix, mMatrix, mvpMatrix);
+  gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
 
 // ---------------------------------------------------- //
-  // モデルの描画
-  gl.drawArrays(gl.TRIANGLES, 0, 3);
 
   // コンテキストの再描画
   gl.flush();
