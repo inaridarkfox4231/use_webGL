@@ -1,4 +1,6 @@
 'use strict';
+// strictモードだとarguments.calleeが使えないので、コード書き換えて
+// mainLoop部分をsetIntervalで呼び出すことにした。うまくいった。よしよし。
 
 onload = function(){
   // canvasエレメントの取得（１）
@@ -8,15 +10,6 @@ onload = function(){
 
   // webGLコンテキストの取得（２）
   var gl = c.getContext('webgl');
-
-  // canvasを初期化する色を設定する
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);
-
-  // canvasを初期化する際の深度を設定する
-  gl.clearDepth(1.0);
-
-  // canvas初期化(深さについての組み込み変数を追加)
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 // ---------------------------------------------------- //
 
@@ -64,7 +57,7 @@ onload = function(){
 // ---------------------------------------------------- //
   // レンダリングの為の座標変換行列を用意する
 
-  // uniformLocationの取得
+  // uniformLocationの取得（何番目のuniform変数なのかというインデックス）
   var uniLocation = gl.getUniformLocation(prg, 'mvpMatrix');
 
   // matIVオブジェクトを用意する
@@ -79,37 +72,70 @@ onload = function(){
 
   // 複数の三角形をレンダリングする場合には、モデル行列だけ差し替えて、別々に描画する
 
-  // 今回はモデル変換行列はノータッチで。
-
   // ビュー座標変換行列、プロジェクション
   // カメラの位置は上に1.0, うしろに3.0の所、注視点は原点、上方向はy軸の正の向き。
-  m.lookAt([0.0, 0.0, 3.0], [0, 0, 0], [0, 1, 0], vMatrix);
-  m.perspective(90, c.width / c.height, 0.1, 100, pMatrix);
+  m.lookAt([0.0, 0.0, 5.0], [0, 0, 0], [0, 1, 0], vMatrix);
+  m.perspective(45, c.width / c.height, 0.1, 100, pMatrix);
   m.multiply(pMatrix, vMatrix, tmpMatrix); // pv.
 
-  // 一つ目のモデルを移動するためのモデル変換行列
-  m.translate(mMatrix, [1.5, 0.0, 0.0], mMatrix);
+  // カウンタの浅間
+  var count = 0;
 
-  // モデル・ビュー・プロジェクション（ひとつめ）
-  m.multiply(tmpMatrix, mMatrix, mvpMatrix);
+  // 恒常ループ
+  function mainLoop(){
+    // canvasの初期化
+    // canvasを初期化する色を設定、その際の深度を設定、canvas初期化
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearDepth(1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  // uniformLocationに座標変換行列を登録して描画～
-  gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
-  gl.drawArrays(gl.TRIANGLES, 0, 3);
+    // カウンタのインクリメント
+    count++;
 
-  // 次に、二つ目のモデルを用意するための準備（初期化を忘れずに）
-  m.identity(mMatrix);
-  m.translate(mMatrix, [-1.5, 0.0, 0.0], mMatrix);
+    // カウンタ変数をラジアンに変換
+    var rad = (count % 360) * Math.PI / 180;
 
-  // 以下同じ処理
-  m.multiply(tmpMatrix, mMatrix, mvpMatrix);
-  gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
-  gl.drawArrays(gl.TRIANGLES, 0, 3);
+    // モデル1は円軌道を描き移動する
+    var x = Math.cos(rad);
+    var y = Math.sin(rad);
+    m.identity(mMatrix);
+    m.translate(mMatrix, [x, y + 1.0, 0.0], mMatrix);
 
-// ---------------------------------------------------- //
+    //　モデル1の座標変換行列を完成させ描画
+    m.multiply(tmpMatrix, mMatrix, mvpMatrix);
+    gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
+    gl.drawArrays(gl.TRIANGLES, 0, 3); // 0番目の頂点から3つ使うみたいな感じ
 
-  // コンテキストの再描画
-  gl.flush();
+    // モデル2はy軸を中心に回転
+    m.identity(mMatrix);
+    m.translate(mMatrix, [1.0, -1.0, 0.0], mMatrix); // y軸中心で回転してから移動させてずらしているみたい
+    m.rotate(mMatrix, rad, [0, 1, 0], mMatrix);
+
+    // モデル2の（以下略）
+    m.multiply(tmpMatrix, mMatrix, mvpMatrix);
+    gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    // モデル3は拡大縮小する
+    var s = Math.sin(rad) + 1.0;
+    m.identity(mMatrix);
+    m.translate(mMatrix, [-1.0, -1.0, 0.0], mMatrix);
+    m.scale(mMatrix, [s, s, 0.0], mMatrix);
+
+    // モデル3の（以下略）
+    m.multiply(tmpMatrix, mMatrix, mvpMatrix);
+    gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    // コンテキストの再描画
+    gl.flush();
+
+    // ループ処理
+    //setTimeout(arguments.callee, 1000 / 30);
+
+  }
+
+  setInterval(mainLoop, 1000 / 30);
 
 // ---------------------------------------------------- //
   // シェーダの作成とコンパイル（３）

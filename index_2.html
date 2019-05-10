@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>複数の三角形を動かす</title>
+    <script src="https://wgld.org/j/minMatrix.js"></script>
+    <script src = "./src/script_2.js"></script>
+    <script id = "vs" type = "x-shader/x-vertex">
+      attribute vec3 position; // 頂点の位置情報
+      attribute vec4 color; // 頂点の色情報
+      uniform mat4 mvpMatrix; // モデル、ビュー、プロジェクションの行列を掛け合わせたもの
+      varying vec4 vColor; // フラグメントシェーダへの橋渡し
+
+      void main(void){
+        vColor = color;
+        // vec3をvec4に変える。
+        gl_Position = mvpMatrix * vec4(position, 1.0);
+      }
+    </script>
+    <script id = "fs" type = "x-shader/x-fragment">
+      precision mediump float;
+
+      varying vec4 vColor; // 同じ名前の変数
+      void main(void){
+        // 真っ白に塗りつぶすだけ
+        gl_FragColor = vColor; // 頂点の色情報を受け取る
+      }
+    </script>
+    <style>
+      *{ padding: 0; margin: 0; }
+      canvas{
+        display: block; margin: 0 auto;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id = "canvas"></canvas>
+  </body>
+</html>
