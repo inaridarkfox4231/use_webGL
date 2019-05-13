@@ -10,6 +10,7 @@
     uniform vec2  resolution;
 
     const float ITERATIONS = 32.0; // 繰り返し回数の上限
+
     float reflection_1(){
       vec2 p = (gl_FragCoord.xy * 2.0 - resolution) / resolution;
       float x = p.x;
@@ -65,13 +66,9 @@
       return mod(count, 6.0) / 8.0;
     }
 
-    float reflection_3(){
-      // 円の反転で遊んでみる
-    }
-
     void main(void){
       float ref = reflection_2();
-      gl_FragColor = vec4(ref * 0.3, ref * 0.3, reflection_2() + 0.25, 1.0);
+      gl_FragColor = vec4(ref * 0.3, ref * 0.3, ref + 0.25, 1.0);
     }
   </script>
   <!-- /fragment shader -->
