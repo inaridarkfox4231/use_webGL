@@ -1,39 +1,115 @@
 <!DOCTYPE html>
-<html lang="ja" dir="ltr">
-  <head>
-    <meta charset="utf-8">
-    <title>WebGL TEST</title>
-    <script src="https://wgld.org/j/minMatrix.js"></script>
-    <script src = "./src/script.js"></script>
-    <script id = "vs" type = "x-shader/x-vertex">
-      attribute vec3 position; // 頂点の位置情報
-      attribute vec4 color; // 頂点の色情報
-      uniform mat4 mvpMatrix; // モデル、ビュー、プロジェクションの行列を掛け合わせたもの
-      varying vec4 vColor; // フラグメントシェーダへの橋渡し
+<html>
+<head>
+  <title>GLSLだけでレンダリング</title>
+  <!-- fragment shader -->
+  <script id="fs" type="x-shader/x-fragment">
+    precision mediump float;
+    uniform float time;
+    uniform vec2  mouse;
+    uniform vec2  resolution;
 
-      void main(void){
-        vColor = color;
-        // vec3をvec4に変える。
-        gl_Position = mvpMatrix * vec4(position, 1.0);
-      }
-    </script>
-    <script id = "fs" type = "x-shader/x-fragment">
-      precision mediump float;
+    const float ITERATIONS = 32.0; // 繰り返し回数の上限
+    const float PI = 3.14159; // 円周率
 
-      varying vec4 vColor; // 同じ名前の変数
-      void main(void){
-        // 真っ白に塗りつぶすだけ
-        gl_FragColor = vColor; // 頂点の色情報を受け取る
+    // 中心（center, 0.0）,半径radiusの円による反転操作
+    vec2 inversion(vec2 q, float radius, float center){
+      float factor = pow(radius, 2.0) / (pow(q.x - center, 2.0) + pow(q.y, 2.0));
+      return vec2(center, 0.0) + (vec2(q.x - center, q.y) * factor);
+    }
+
+    // 比s/rを求めるための計算
+    float calc_ratio(float theta, float phi){
+      return (cos(phi) + sqrt(pow(cos(phi), 2.0) - pow(sin(theta), 2.0))) / pow(sin(theta), 2.0);
+    }
+
+    // ぎゅーんゆっくりぎゅーんのイージング（0～100→0～100）
+    float easing_0(float x){
+      return 50.0 * (1.0 - pow(cos(PI * x / 100.0), 5.0));
+    }
+    // ゆっくりーーぎゅんっのイージング
+    float easing_1(float x){
+      return 100.0 * (1.0 - sqrt(1.0 - pow(x / 100.0, 2.0)));
+    }
+
+    float reflection_3(){
+      // 円の反転で遊んでみる
+      // pは x:-1.0～1.0, y:0.0～2.0 の範囲で。
+      vec2 p = vec2(0.0, 1.0) + ((gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y));
+      mat2 ref0 = mat2(-1.0, 0.0, 0.0, 1.0);
+      // float r = 3.1426 + 2.6426 * sin(time * PI);
+      // 3回ループしたのち逆方向に動くように調整
+      // イージングを掛けて最初と最後だけぎゅーんした方がいいかもしれないな・・
+      float direction = 1.0 - mod(floor(time * 50.0 / 300.0), 2.0) * 2.0;
+      float r;
+      // mod(time * 50.0, 100.0)は0～100の範囲を動くので、
+      // イージングを掛けるならここを0～1にしたうえで100倍すればOK.
+      float progress = mod(time * 50.0, 100.0);
+      // progress = easing_0(progress);
+
+      // rについて。0.5は最小値。最大値は、それをr'として、r * r' = (s * sin(theta))^2 で求める。
+      // （ただしこの計算でrは0.5, sはrが0.5の場合の値、つまりratio * 0.5である。）
+      // この場合のr'は5.785233..になるので、それを元にしてこの手の処理を算出している。
+      if(direction > 0.0){
+        r = 0.5 + 0.052852 * progress;
+      }else{
+        r = 5.7852 - 0.052852 * progress;
       }
-    </script>
-    <style>
-      *{ padding: 0; margin: 0; }
-      canvas{
-        display: block; margin: 0 auto;
+      float ratio = calc_ratio(PI / 8.0, PI / 4.0);
+      float s = ratio * r;
+      float a = -s * cos(PI / 8.0);
+
+      float count = 0.0;
+      bool b = false;
+      for(float i = 0.0; i < ITERATIONS; i += 1.0){
+        if(p.x < 0.0){
+          p = ref0 * p;
+          count += 1.0;
+        }else if(length(p) < r){
+          p = inversion(p, r, 0.0);
+          count += 1.0;
+        }else if(length(p - vec2(a, 0.0)) > s){
+          p = inversion(p, s, a);
+          count += 1.0;
+        }else{
+          b = true;
+        }
+        if(b){ break; }
       }
-    </style>
-  </head>
-  <body>
-    <canvas id = "canvas"></canvas>
-  </body>
+      return mod(count, 2.0);
+    }
+
+    void main(void){
+      float ref = reflection_3();
+      gl_FragColor = vec4(0.3 + ref * 0.3, 0.3 + ref * 0.3, 0.5 + 0.5 * ref, 1.0);
+    }
+  </script>
+  <!-- /fragment shader -->
+
+  <!-- vertex shader -->
+  <script id="vs" type="x-shader/x-vertex">
+    attribute vec3 position;
+
+    void main(void){
+      gl_Position = vec4(position, 1.0);
+    }
+  </script>
+  <!-- /vertex shader -->
+
+  <script src="./src/script_7.js" type="text/javascript"></script>
+  <style type="text/css">
+    *{
+      text-align: center;
+      margin: 10px auto;
+      padding: 0px;
+    }
+    canvas{
+      box-shadow: 0px 0px 0px 1px gray;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <p><input type="checkbox" id="check" checked><label for="check"> auto run</label></p>
+</body>
 </html>
