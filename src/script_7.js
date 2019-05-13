@@ -13,7 +13,7 @@ window.onload = function(){
 	c = document.getElementById('canvas');
 
 	// canvas サイズ
-	cw = 640; ch = 480;
+	cw = 768; ch = 384;
 	c.width = cw; c.height = ch;
 
 	// エレメントを取得

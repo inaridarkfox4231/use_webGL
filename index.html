@@ -40,6 +40,11 @@
       // float r = 3.1426 + 2.6426 * sin(time * PI);
       // 3回ループしたのち逆方向に動くように調整
       // イージングを掛けて最初と最後だけぎゅーんした方がいいかもしれないな・・
+
+      // rについて。0.5は最小値。最大値は、それをr'として、r * r' = (s * sin(theta))^2 で求める。
+      // （ただしこの計算でrは0.5, sはrが0.5の場合の値、つまりratio * 0.5である。）
+      // この場合のr'は5.785233..になるので、それを元にしてこの手の処理を算出している。
+
       float direction = 1.0 - mod(floor(time * 50.0 / 300.0), 2.0) * 2.0;
       float r;
       // mod(time * 50.0, 100.0)は0～100の範囲を動くので、
@@ -47,17 +52,24 @@
       float progress = mod(time * 50.0, 100.0);
       // progress = easing_0(progress);
 
-      // rについて。0.5は最小値。最大値は、それをr'として、r * r' = (s * sin(theta))^2 で求める。
-      // （ただしこの計算でrは0.5, sはrが0.5の場合の値、つまりratio * 0.5である。）
-      // この場合のr'は5.785233..になるので、それを元にしてこの手の処理を算出している。
+      // (8,4)型。(m,n)は1/m + 1/n < 1/2という制約条件を満たす必要がある。
+      // mが奇数の時は計算方法が違うのかな・・
+      // あーそうか、mが奇数の場合はy軸上に3つの頂点がすべて現れるから計算の仕方が変わっちゃうのね。
+      // mが奇数でnが偶数でもおかしなことになるようだ・・
+      float theta = PI / 6.0;
+      float phi = PI / 5.0;
+      float ratio = calc_ratio(theta, phi);
+      // r_minとr_maxの定義はここで行う
+      float r_min = 0.4;
+      float r_max = pow(ratio * sin(theta), 2.0) * r_min;
+      float interval = (r_max - r_min) / 100.0;
       if(direction > 0.0){
-        r = 0.5 + 0.052852 * progress;
+        r = r_min + interval * progress;
       }else{
-        r = 5.7852 - 0.052852 * progress;
+        r = r_max - interval * progress;
       }
-      float ratio = calc_ratio(PI / 8.0, PI / 4.0);
       float s = ratio * r;
-      float a = -s * cos(PI / 8.0);
+      float a = -s * cos(theta);
 
       float count = 0.0;
       bool b = false;
