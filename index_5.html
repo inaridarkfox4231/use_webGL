@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GLSLだけでレンダリング</title>
+  <!-- fragment shader -->
+  <script id="fs" type="x-shader/x-fragment">
+    precision mediump float;
+    uniform float time;
+    uniform vec2  mouse;
+    uniform vec2  resolution;
+
+    void main(void){
+      //vec2 p = (gl_FragCoord.xy * 2.0 - resolution) / resolution;
+      //vec2 color = (vec2(1.0) + p.xy) * 0.5;
+      //gl_FragColor = vec4(color, 0.5, 1.0);
+      //float factor = sin(time * 2.0 * 3.14159 / 16.0) * 8.0;
+      //vec2 interval = vec2(32.0 + factor, 32.0 + factor);
+
+      /*
+      黒と白のツートン
+      vec2 interval = vec2(32.0);
+      vec2 bitFlag = mod(floor((gl_FragCoord.xy + vec2(time * 64.0, time * 48.0)) / interval), 2.0);
+      vec3 bit = mod(vec3(bitFlag.x + bitFlag.y), 2.0);
+      gl_FragColor = vec4(bit, 1.0);
+      */
+
+      vec2 p = (gl_FragCoord.xy * 2.0 - resolution) / max(resolution.x, resolution.y);
+      vec2 center = vec2(cos(time * 2.0 * 3.14159 / 4.0), sin(time * 2.0 * 3.14159 / 4.0)) * 0.3;
+      if(length(p - center) < 0.05){
+        gl_FragColor = vec4(vec3(0.0), 1.0);
+      }else{
+        gl_FragColor = vec4(vec3(0.8), 1.0);
+      }
+    }
+  </script>
+  <!-- /fragment shader -->
+
+  <!-- vertex shader -->
+  <script id="vs" type="x-shader/x-vertex">
+    attribute vec3 position;
+
+    void main(void){
+      gl_Position = vec4(position, 1.0);
+    }
+  </script>
+  <!-- /vertex shader -->
+
+  <script src="./src/script_5.js" type="text/javascript"></script>
+  <style type="text/css">
+    *{
+      text-align: center;
+      margin: 10px auto;
+      padding: 0px;
+    }
+    canvas{
+      box-shadow: 0px 0px 0px 1px gray;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <p><input type="checkbox" id="check" checked><label for="check"> auto run</label></p>
+</body>
+</html>

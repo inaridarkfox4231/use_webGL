@@ -3,7 +3,7 @@
 onload = function(){
   // canvasエレメントの取得（１）
   var c = document.getElementById("canvas");
-  c.width = 300;
+  c.width = 500;
   c.height = 300;
 
   // webGLコンテキストの取得（２）
@@ -42,9 +42,9 @@ onload = function(){
 // ---------------------------------------------------- //
   // モデルデータを作る（頂点のデータ）。さらにVBOを生成して頂点シェーダと関連付ける
   var vertex_position = [
-    0.0, 1.0, 0.0,
-    1.0, 0.0, 0.0,
-    -1.0, 0.0, 0.0
+    0.0, 3.0, 0.0,
+    5.0, 0.0, 0.0,
+    -5.0, 0.0, 0.0
   ];
 
   // 頂点の色情報を格納する配列
@@ -82,16 +82,17 @@ onload = function(){
   // 今回はモデル変換行列はノータッチで。
 
   // ビュー座標変換行列、プロジェクション
-  // カメラの位置は上に1.0, うしろに3.0の所、注視点は原点、上方向はy軸の正の向き。
+  // カメラの位置はうしろに3.0の所、注視点は原点、上方向はy軸の正の向き。
   m.lookAt([0.0, 0.0, 3.0], [0, 0, 0], [0, 1, 0], vMatrix);
   m.perspective(90, c.width / c.height, 0.1, 100, pMatrix);
   m.multiply(pMatrix, vMatrix, tmpMatrix); // pv.
 
   // 一つ目のモデルを移動するためのモデル変換行列
-  m.translate(mMatrix, [1.5, 0.0, 0.0], mMatrix);
+  //m.translate(mMatrix, [4.5, 4.5, 0.0], mMatrix);
 
   // モデル・ビュー・プロジェクション（ひとつめ）
   m.multiply(tmpMatrix, mMatrix, mvpMatrix);
+  console.log(mvpMatrix);
 
   // uniformLocationに座標変換行列を登録して描画～
   gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
@@ -99,10 +100,11 @@ onload = function(){
 
   // 次に、二つ目のモデルを用意するための準備（初期化を忘れずに）
   m.identity(mMatrix);
-  m.translate(mMatrix, [-1.5, 0.0, 0.0], mMatrix);
+  m.translate(mMatrix, [-2, 0.0, 0.0], mMatrix);
 
   // 以下同じ処理
   m.multiply(tmpMatrix, mMatrix, mvpMatrix);
+  console.log(mvpMatrix);
   gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 

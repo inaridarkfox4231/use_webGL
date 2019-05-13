@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GLSLだけでレンダリング</title>
+  <!-- fragment shader -->
+  <script id="fs" type="x-shader/x-fragment">
+    precision mediump float;
+    uniform float time;
+    uniform vec2  mouse;
+    uniform vec2  resolution;
+
+    const float ITERATIONS = 32.0; // 繰り返し回数の上限
+    float reflection_1(){
+      vec2 p = (gl_FragCoord.xy * 2.0 - resolution) / resolution;
+      float x = p.x;
+      float y = p.y;
+      float tmp;
+      // 3つの反射（x=0, y=0, x+y=1）
+      float count = 0.0; // 反射した回数
+      bool b = false; // 基本領域の中に入るときtrue
+      for(float i = 0.0; i < ITERATIONS; i += 1.0){
+        if(x < 0.0){
+          x = -x;
+          count += 1.0;
+        }else if(y < 0.0){
+          y = -y;
+          count += 1.0;
+        }else if(x + y > 0.1){
+          tmp = x;
+          x = 0.1 - y;
+          y = 0.1 - tmp;
+          count += 1.0;
+        }else{
+          b = true;
+        }
+        if(b){ break; }
+      }
+      return mod(count, 4.0) / 4.0;
+    }
+
+    float reflection_2(){
+      vec2 p = (gl_FragCoord.xy * 2.0 - resolution) / resolution;
+      // 反射行列の計算（三角形）
+      mat2 ref0 = mat2(1.0, 0.0, 0.0, -1.0);
+      mat2 ref1 = mat2(-0.5, 1.732 / 2.0, 1.732 / 2.0, 0.5);
+      vec2 diff = vec2(0.3, 0.1732);
+      mat2 ref2 = mat2(-0.5, -1.732 / 2.0, -1.732 / 2.0, 0.5);
+      float count = 0.0;
+      bool b = false;
+      for(float i = 0.0; i < ITERATIONS; i += 1.0){
+        if(p.y < 0.0){
+          p = ref0 * p;
+          count += 1.0;
+        }else if(p.y > 1.732 * p.x){
+          p = ref1 * p;
+          count += 1.0;
+        }else if(p.y > 0.2 * 1.732 - 1.732 * p.x){
+          p = diff + ref2 * p;
+          count += 1.0;
+        }else{
+          b = true;
+        }
+        if(b){ break; }
+      }
+      return mod(count, 6.0) / 8.0;
+    }
+
+    float reflection_3(){
+      // 円の反転で遊んでみる
+    }
+
+    void main(void){
+      float ref = reflection_2();
+      gl_FragColor = vec4(ref * 0.3, ref * 0.3, reflection_2() + 0.25, 1.0);
+    }
+  </script>
+  <!-- /fragment shader -->
+
+  <!-- vertex shader -->
+  <script id="vs" type="x-shader/x-vertex">
+    attribute vec3 position;
+
+    void main(void){
+      gl_Position = vec4(position, 1.0);
+    }
+  </script>
+  <!-- /vertex shader -->
+
+  <script src="./src/script_6.js" type="text/javascript"></script>
+  <style type="text/css">
+    *{
+      text-align: center;
+      margin: 10px auto;
+      padding: 0px;
+    }
+    canvas{
+      box-shadow: 0px 0px 0px 1px gray;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <p><input type="checkbox" id="check" checked><label for="check"> auto run</label></p>
+</body>
+</html>
