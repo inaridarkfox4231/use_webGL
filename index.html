@@ -9,7 +9,7 @@
     uniform vec2  mouse;
     uniform vec2  resolution;
 
-    const float ITERATIONS = 32.0; // 繰り返し回数の上限
+    const float ITERATIONS = 64.0; // 繰り返し回数の上限
     const float PI = 3.14159; // 円周率
 
     // 中心（center, 0.0）,半径radiusの円による反転操作
@@ -17,7 +17,6 @@
       float factor = pow(radius, 2.0) / (pow(q.x - center, 2.0) + pow(q.y, 2.0));
       return vec2(center, 0.0) + (vec2(q.x - center, q.y) * factor);
     }
-
     // 比s/rを求めるための計算
     float calc_ratio(float theta, float phi){
       return (cos(phi) + sqrt(pow(cos(phi), 2.0) - pow(sin(theta), 2.0))) / pow(sin(theta), 2.0);
@@ -27,6 +26,15 @@
     vec2 poincare_to_half(vec2 p){
       return vec2(-2.0 * p.y, (1.0 - pow(p.x, 2.0) - pow(p.y, 2.0))) / (pow(p.x - 1.0, 2.0) + pow(p.y, 2.0));
     }
+    // ぎゅーんゆっくり
+    float easing_2(float x){
+      return 200.0 * ((7.0 / 8.0) + (x / 1600.0) - (7.0 / 8.0) * pow(1.0 - (x / 200.0), 4.0));
+    }
+    // ゆっくりぎゅーん
+    float easing_3(float x){
+      return 200.0 * ((x / 1600.0) + (7.0 / 8.0) * pow(x / 200.0, 4.0));
+    }
+
 
     float reflection_3(){
       // 円の反転で遊んでみる
@@ -43,27 +51,29 @@
       // （ただしこの計算でrは0.5, sはrが0.5の場合の値、つまりratio * 0.5である。）
       // この場合のr'は5.785233..になるので、それを元にしてこの手の処理を算出している。
 
-      float direction = 1.0 - mod(floor(time * 50.0 / 300.0), 2.0) * 2.0;
+      float direction = 1.0 - mod(floor(time * 25.0 / 200.0), 2.0) * 2.0;
       float r;
       // mod(time * 50.0, 100.0)は0～100の範囲を動くので、
-      float progress = mod(time * 50.0, 100.0);
+      float progress = mod(time * 25.0, 200.0);
 
       // (6,5)型。(m,n)は1/m + 1/n < 1/2という制約条件を満たす必要がある。
       // mが奇数の時は計算方法が違うのかな・・
       // あーそうか、mが奇数の場合はy軸上に3つの頂点がすべて現れるから計算の仕方が変わっちゃうのね。
       // mが奇数でnが偶数でもおかしなことになるようだ・・
       float theta = PI / 6.0;
-      float phi = PI / 5.0;
-      float ratio = calc_ratio(theta, phi);
+      float phi = PI / 6.0;
       // r_minとr_maxの定義はここで行う
-      float r_min = 0.4;
-      float r_max = pow(ratio * sin(theta), 2.0) * r_min;
-      float interval = (r_max - r_min) / 100.0;
+      float r_min = 0.5;
+      float r_max = 500.0;
+      float interval = (r_max - r_min) / 200.0;
       if(direction > 0.0){
+        progress = easing_3(progress);
         r = r_min + interval * progress;
       }else{
+        progress = easing_2(progress);
         r = r_max - interval * progress;
       }
+      float ratio = calc_ratio(theta, phi);
       float s = ratio * r;
       float a = -s * cos(theta);
 
@@ -89,7 +99,7 @@
 
     void main(void){
       float ref = reflection_3();
-      gl_FragColor = vec4(0.3 + ref * 0.3, 0.3 + ref * 0.3, 0.5 + 0.5 * ref, 1.0);
+      gl_FragColor = vec4(0.2 + ref * 0.3, 0.4 + ref * 0.3, 0.3 + 0.5 * ref, 1.0);
     }
   </script>
   <!-- /fragment shader -->

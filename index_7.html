@@ -9,7 +9,7 @@
     uniform vec2  mouse;
     uniform vec2  resolution;
 
-    const float ITERATIONS = 32.0; // 繰り返し回数の上限
+    const float ITERATIONS = 64.0; // 繰り返し回数の上限
     const float PI = 3.14159; // 円周率
 
     // 中心（center, 0.0）,半径radiusの円による反転操作
@@ -23,13 +23,36 @@
       return (cos(phi) + sqrt(pow(cos(phi), 2.0) - pow(sin(theta), 2.0))) / pow(sin(theta), 2.0);
     }
 
+    // 補助的な変数alphaを計算する（epsironには上記の計算結果であるratioが入る）
+    float calc_alpha(float theta, float epsiron){
+      return (pow(epsiron * sin(theta), 2.0) - 1.0) / (2.0 * epsiron * cos(theta));
+    }
+
+    // 角度thetaと角度phiの示す角の挟む距離の比の値を算出する
+    float calc_distRatio_1(float theta, float alpha, float epsiron){
+      return ((epsiron * (1.0 + cos(theta)) + alpha) * tan(theta / 2.0)) / sqrt(1.0 - pow(alpha, 2.0));
+    }
+
+    // 角度phiと角度PI/2の示す角の挟む距離の比の値を算出する
+    float calc_distRatio_2(float alpha){
+      return sqrt((1.0 + alpha) / (1.0 - alpha));
+    }
+
     // ぎゅーんゆっくりぎゅーんのイージング（0～100→0～100）
     float easing_0(float x){
-      return 50.0 * (1.0 - pow(cos(PI * x / 100.0), 5.0));
+      return 50.0 * (1.0 - pow(cos(PI * x / 200.0), 5.0));
     }
     // ゆっくりーーぎゅんっのイージング
     float easing_1(float x){
-      return 100.0 * (1.0 - sqrt(1.0 - pow(x / 100.0, 2.0)));
+      return 200.0 * (1.0 - sqrt(1.0 - pow(x / 200.0, 2.0)));
+    }
+    // ぎゅーんゆっくり
+    float easing_2(float x){
+      return 200.0 * ((7.0 / 8.0) + (x / 1600.0) - (7.0 / 8.0) * pow(1.0 - (x / 200.0), 4.0));
+    }
+    // ゆっくりぎゅーん
+    float easing_3(float x){
+      return 200.0 * ((x / 1600.0) + (7.0 / 8.0) * pow(x / 200.0, 4.0));
     }
 
     float reflection_3(){
@@ -45,27 +68,46 @@
       // （ただしこの計算でrは0.5, sはrが0.5の場合の値、つまりratio * 0.5である。）
       // この場合のr'は5.785233..になるので、それを元にしてこの手の処理を算出している。
 
-      float direction = 1.0 - mod(floor(time * 50.0 / 300.0), 2.0) * 2.0;
+      float direction = 1.0 - mod(floor(time * 25.0 / 200.0), 2.0) * 2.0;
       float r;
       // mod(time * 50.0, 100.0)は0～100の範囲を動くので、
       // イージングを掛けるならここを0～1にしたうえで100倍すればOK.
-      float progress = mod(time * 50.0, 100.0);
-      // progress = easing_0(progress);
+      float progress = mod(time * 25.0, 200.0);
+      //progress = easing_1(progress);
 
       // (8,4)型。(m,n)は1/m + 1/n < 1/2という制約条件を満たす必要がある。
       // mが奇数の時は計算方法が違うのかな・・
       // あーそうか、mが奇数の場合はy軸上に3つの頂点がすべて現れるから計算の仕方が変わっちゃうのね。
       // mが奇数でnが偶数でもおかしなことになるようだ・・
-      float theta = PI / 6.0;
-      float phi = PI / 5.0;
+      float m = 9.0;
+      float n = 7.0;
+      float theta = PI / m;
+      float phi = PI / n;
       float ratio = calc_ratio(theta, phi);
+      float alpha = calc_alpha(theta, ratio);
+      float distRatio_1 = calc_distRatio_1(theta, alpha, ratio);
+      float distRatio_2 = calc_distRatio_2(alpha);
       // r_minとr_maxの定義はここで行う
-      float r_min = 0.4;
-      float r_max = pow(ratio * sin(theta), 2.0) * r_min;
-      float interval = (r_max - r_min) / 100.0;
+      float r_min = 0.5;
+      float r_max = 200.0;
+      /*
+      if(mod(m, 2.0) < 0.5){
+        // mが偶数の場合
+        r_max = pow(ratio * sin(theta), 2.0) * r_min;
+      }else if(mod(n, 2.0) < 0.5){
+        // mが奇数でnが偶数の場合
+        r_max = pow(ratio * sin(theta) * distRatio_1, 2.0) * r_min;
+      }else{
+        // mとnが共に奇数の場合
+        r_max = pow(ratio * sin(theta) * distRatio_1 * distRatio_2, 2.0) * r_min;
+      }
+      */
+      float interval = (r_max - r_min) / 200.0;
       if(direction > 0.0){
+        progress = easing_3(progress);
         r = r_min + interval * progress;
       }else{
+        progress = easing_2(progress);
         r = r_max - interval * progress;
       }
       float s = ratio * r;
