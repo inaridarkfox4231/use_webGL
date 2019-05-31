@@ -90,6 +90,9 @@ function render(){
 	gl.clear(gl.COLOR_BUFFER_BIT);
 
 	// uniform 関連
+	// 解説：tempTimeは最初から最後に停止した時までの動いていた時間の累計。
+	// そしてtimeは最後に停止してからの経過時間なので、それらを足し合わせると、動いていた時間の累計になって、
+	// 停止によるラグが無くなるとかそういう話。frameCountを使うならそういった心配はなくなるけどね。
 	gl.uniform1f(uniLocation[0], time + tempTime);
 	gl.uniform2fv(uniLocation[1], [mx, my]);
 	gl.uniform2fv(uniLocation[2], [cw, ch]);
