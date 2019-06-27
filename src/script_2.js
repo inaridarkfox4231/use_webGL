@@ -83,6 +83,7 @@ onload = function(){
 
   // 恒常ループ
   function mainLoop(){
+    // const start = performance.now();
     // canvasの初期化
     // canvasを初期化する色を設定、その際の深度を設定、canvas初期化
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -132,7 +133,9 @@ onload = function(){
 
     // ループ処理
     //setTimeout(arguments.callee, 1000 / 30);
-
+    //const end = performance.now();
+    //const timeStr = (end - start).toPrecision(4);
+    //if(count % 20 === 0){ console.log(timeStr); }
   }
 
   setInterval(mainLoop, 1000 / 30);
